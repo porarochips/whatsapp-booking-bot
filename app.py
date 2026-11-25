@@ -6,6 +6,7 @@ from customer_flow import handle_customer_message
 from database import get_business_by_phone_number_id
 from owner_commands import handle_owner_command
 from scheduler import run_report_for_business
+from scheduler import run_report_for_business
 app = Flask(__name__)
 
 
@@ -88,6 +89,14 @@ def webhook():
 
     send_whatsapp_text(incoming["phone_number_id"], sender_phone, reply)
     return jsonify({"status": "processed"}), 200
+    if owner_phone and sender_phone == owner_phone:
+        reply = handle_owner_command(
+            text,
+            business,
+            on_trigger_pdf=run_report_for_business,
+        )
+    else:
+        reply = handle_customer_message(text, sender_phone, business)
     if owner_phone and sender_phone == owner_phone:
         reply = handle_owner_command(
             text,
