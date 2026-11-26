@@ -6,11 +6,14 @@ from customer_flow import handle_customer_message
 from database import get_business_by_phone_number_id
 from owner_commands import handle_owner_command
 from scheduler import run_report_for_business
-from scheduler import run_report_for_business
+
 app = Flask(__name__)
 
 
-def send_whatsapp_text(phone_number_id: str, to_phone: str, body: str) -> None:
+def send_whatsapp_text(phone_number_id: str, to_phone: str, body: Optional[str]) -> None:
+    if not body:
+        return
+
     if not Config.WHATSAPP_TOKEN:
         print(f"[DEV REPLY -> {to_phone} via {phone_number_id}]: {body}")
         return
@@ -83,28 +86,17 @@ def webhook():
     text = incoming["text"]
 
     if owner_phone and sender_phone == owner_phone:
-        reply = handle_owner_command(text, business)
+        reply = handle_owner_command(
+            text,
+            business,
+            on_trigger_pdf=run_report_for_business,
+        )
     else:
         reply = handle_customer_message(text, sender_phone, business)
 
     send_whatsapp_text(incoming["phone_number_id"], sender_phone, reply)
     return jsonify({"status": "processed"}), 200
-    if owner_phone and sender_phone == owner_phone:
-        reply = handle_owner_command(
-            text,
-            business,
-            on_trigger_pdf=run_report_for_business,
-        )
-    else:
-        reply = handle_customer_message(text, sender_phone, business)
-    if owner_phone and sender_phone == owner_phone:
-        reply = handle_owner_command(
-            text,
-            business,
-            on_trigger_pdf=run_report_for_business,
-        )
-    else:
-        reply = handle_customer_message(text, sender_phone, business)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
